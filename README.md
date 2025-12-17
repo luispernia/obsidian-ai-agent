@@ -7,6 +7,17 @@ An AI powered assistant for my Obsidian Vault. It helps to chat with notes, auto
 
 **Supports:** Google Gemini (Cloud) & Ollama (Local)
 
+<div align="center">
+
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=LangChain&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
+![ChromaDB](https://img.shields.io/badge/ChromaDB-FF6600?style=for-the-badge&logoColor=white)
+
+</div>
+
 ## 🛠️ Setup
 
 1.  **Environment**:
