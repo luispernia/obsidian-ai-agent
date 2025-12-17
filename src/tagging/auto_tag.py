@@ -63,7 +63,9 @@ class TagScanner:
             post = frontmatter.load(file_path)
             
             # 1. Frontmatter tags
-            fm_tags = post.metadata.get('tags', [])
+            fm_tags = post.metadata.get('tags')
+            if fm_tags is None:
+                fm_tags = []
             if isinstance(fm_tags, str):
                 # Handle comma separated or space separated string
                 fm_tags = [t.strip() for t in fm_tags.replace(',', ' ').split()]
@@ -214,6 +216,7 @@ def main():
     parser = argparse.ArgumentParser(description="Auto-tag Obsidian notes.")
     parser.add_argument("--auto", "--yes", action="store_true", help="Automatically apply changes without confirmation.")
     parser.add_argument("--force", action="store_true", help="Ignore cache and re-process all files.")
+    parser.add_argument("--folder", help="Specific folder to scan (relative to Vault root).", default=None)
     args = parser.parse_args()
 
     print(f"Starting Smart Auto-Tagger in {config.VAULT_ABS_PATH}...")
@@ -230,7 +233,17 @@ def main():
         print("Could not initialize LLM. Exiting.")
         return
 
-    files = scanner.get_all_markdown_files()
+    # Filter files if folder argument is present
+    if args.folder:
+        target_dir = Path(config.VAULT_ABS_PATH) / args.folder
+        if not target_dir.exists():
+            print(f"Error: Folder '{args.folder}' does not exist in vault.")
+            return
+        files = list(target_dir.rglob("*.md"))
+        print(f"Targeting folder: {args.folder}")
+    else:
+        files = scanner.get_all_markdown_files()
+
     print(f"Found {len(files)} notes to process.")
     
     lines_processed = 0

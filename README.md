@@ -47,6 +47,9 @@ Scan notes and suggest tags based on content and "maturity" (#seed, #sprout, #ev
 *   **Command**:
     ```bash
     python -m src.tagging.auto_tag --auto
+
+    # Target specific folder
+    python -m src.tagging.auto_tag --folder "Drafts"
     ```
 
 ## ⚙️ Configuration Reference
