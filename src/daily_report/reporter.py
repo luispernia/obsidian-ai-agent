@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 try:
     from langchain_core.prompts import ChatPromptTemplate
 except ImportError:
@@ -7,14 +8,14 @@ from src.ai_provider import AIProvider
 from src.daily_report.git_manager import GitManager
 from src import config
 
-def generate_summary():
+def generate_summary(output_filename: str = "Summary.md"):
     print("Generating Summary Report...")
     
     try:
         manager = GitManager()
     except Exception as e:
         print(f"Failed to initialize GitManager: {e}")
-        return
+        return None
     
     # Get Changes
     diff_text = manager.get_current_changes()
@@ -27,7 +28,7 @@ def generate_summary():
 
     if not diff_text.strip():
         print("No changes found in git history to summarize.")
-        return
+        return None
 
     # Summarize with LLM
     try:
@@ -50,17 +51,18 @@ def generate_summary():
         summary = "Error generating summary."
 
     # Create Report File
-    report_filename = "Summary.md"
-    report_path = os.path.join(config.REPORTS_ABS_PATH, report_filename)
+    report_path = os.path.join(config.REPORTS_ABS_PATH, output_filename)
     
-    report_content = f"# Summary Report ({source})\n\n{summary}\n"
+    report_content = f"# Summary Report ({source})\n*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n{summary}\n"
     
     try:
         with open(report_path, "w") as f:
             f.write(report_content)
         print(f"Summary report created at {report_path}")
+        return report_path
     except Exception as e:
          print(f"Error writing report file: {e}")
+         return None
 
 if __name__ == "__main__":
     generate_summary()

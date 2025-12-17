@@ -1,6 +1,8 @@
 import streamlit as st
 import sys
 import os
+import uuid
+import time
 from pathlib import Path
 
 # Add project root to path so we can import src
@@ -10,6 +12,7 @@ from src.rag.query import query_rag
 from src.daily_report.reporter import generate_summary
 from src.tagging.auto_tag import TagScanner, TagSuggester, TagCache, apply_changes
 from src import config
+from src.gui.storage import ChatManager, ReportManager
 
 st.set_page_config(page_title="Obsidian AI Agent", page_icon="🧠", layout="wide")
 
@@ -24,63 +27,170 @@ with st.sidebar:
     if st.button("Refresh Config"):
         st.experimental_rerun()
 
+# Initialize Managers
+if "chat_manager" not in st.session_state:
+    st.session_state.chat_manager = ChatManager()
+if "report_manager" not in st.session_state:
+    st.session_state.report_manager = ReportManager()
+
+# Initialize Session State for Active Items
+if "active_chat_id" not in st.session_state:
+    st.session_state.active_chat_id = None
+if "active_report_path" not in st.session_state:
+    st.session_state.active_report_path = None
+
 # Tabs
-tab_chat, tab_report, tab_tagger = st.tabs(["💬 Chat (RAG)", "📅 Daily Report", "🏷️ Auto-Tagger"])
+tab_chat, tab_report, tab_tagger = st.tabs(["💬 Chat (RAG)", "📅 Reports", "🏷️ Auto-Tagger"])
 
 # --- TAB 1: RAG CHAT ---
 with tab_chat:
-    st.header("Chat with your Notes")
+    col_hist, col_chat = st.columns([1, 3])
     
-    # Initialize chat history
+    # --- Check for New Chat Creation ---
     if "messages" not in st.session_state:
-        st.session_state.messages = []
+         st.session_state.messages = []
 
-    # Display chat messages from history on app rerun
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # React to user input
-    if prompt := st.chat_input("Ask something about your notes..."):
-        # Display user message in chat message container
-        st.chat_message("user").markdown(prompt)
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    # Left: History
+    with col_hist:
+        st.subheader("History")
         
-        with st.spinner("Thinking..."):
-            try:
-                response = query_rag(prompt)
-            except Exception as e:
-                response = f"Error: {e}"
+        if st.button("➕ New Chat", use_container_width=True):
+            st.session_state.active_chat_id = None
+            st.session_state.messages = []
+            st.rerun()
+            
+        search_query = st.text_input("Search Chats", placeholder="Filter...")
+        
+        chats = st.session_state.chat_manager.list_chats()
+        if search_query:
+            chats = [c for c in chats if search_query.lower() in c["title"].lower()]
+            
+        st.markdown("---")
+        for chat in chats:
+            label = f"{'📌 ' if chat['pinned'] else ''}{chat['title']}"
+            if st.button(label, key=f"chat_{chat['id']}", use_container_width=True):
+                st.session_state.active_chat_id = chat['id']
+                loaded = st.session_state.chat_manager.load_chat(chat['id'])
+                if loaded:
+                    st.session_state.messages = loaded['messages']
+                st.rerun()
 
-        # Display assistant response in chat message container
-        with st.chat_message("assistant"):
-            st.markdown(response)
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response})
+    # Right: Chat Interface
+    with col_chat:
+        if st.session_state.active_chat_id:
+             # Header Actions for Active Chat
+             c1, c2, c3 = st.columns([6, 1, 1])
+             with c2:
+                 if st.button("📌", help="Toggle Pin"):
+                     st.session_state.chat_manager.toggle_pin(st.session_state.active_chat_id)
+                     st.rerun()
+             with c3:
+                 if st.button("🗑️", help="Delete Chat"):
+                     st.session_state.chat_manager.delete_chat(st.session_state.active_chat_id)
+                     st.session_state.active_chat_id = None
+                     st.session_state.messages = []
+                     st.rerun()
 
-# --- TAB 2: DAILY REPORT ---
+        # Display Chat
+        container = st.container(height=600)
+        for message in st.session_state.messages:
+            with container.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # Input
+        if prompt := st.chat_input("Ask something about your notes..."):
+            with container.chat_message("user"):
+                st.markdown(prompt)
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            
+            with st.spinner("Thinking..."):
+                try:
+                    response = query_rag(prompt)
+                except Exception as e:
+                    response = f"Error: {e}"
+
+            with container.chat_message("assistant"):
+                st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            
+            # Save Chat
+            if not st.session_state.active_chat_id:
+                st.session_state.active_chat_id = str(uuid.uuid4())
+                # Generate simple title from first prompt
+                title = (prompt[:30] + '..') if len(prompt) > 30 else prompt
+            else:
+                # Keep existing title
+                # (Ideally we'd read it, but for now we just pass None to keep existing)
+                title = None 
+                
+            st.session_state.chat_manager.save_chat(
+                st.session_state.active_chat_id, 
+                st.session_state.messages,
+                title=title
+            )
+            # Rerun only if we just created a new ID so the UI updates
+            if title: 
+                 st.rerun()
+
+
+# --- TAB 2: REPORTS ---
 with tab_report:
-    st.header("Daily Work Report")
-    st.info("Generates a summary of changes based on git history.")
+    col_rep_list, col_rep_view = st.columns([1, 3])
     
-    if st.button("Generate Report"):
-        with st.spinner("Analyzing git changes..."):
-            try:
-                 # generate_summary prints to stdout/file, doesn't return string.
-                 # We rely on it writing to the file.
-                 generate_summary()
-                 
-                 report_path = os.path.join(config.REPORTS_ABS_PATH, "Summary.md")
-                 if os.path.exists(report_path):
-                     with open(report_path, "r") as f:
-                         report_content = f.read()
-                     st.markdown(report_content)
-                     st.success("Report generated successfully!")
-                 else:
-                     st.error("Report generation ran, but no file was found.")
-            except Exception as e:
-                st.error(f"Failed to generate report: {e}")
+    with col_rep_list:
+        st.subheader("Reports")
+        
+        # Generator
+        with st.expander("Generate New Report"):
+            rep_name = st.text_input("Filename (Optional)", placeholder="MyReport.md")
+            if st.button("Generate Now", use_container_width=True):
+                with st.spinner("Analyzing git changes..."):
+                     filename = rep_name if rep_name and rep_name.strip() else f"Report_{time.strftime('%Y-%m-%d_%H-%M')}.md"
+                     if not filename.endswith(".md"): filename += ".md"
+                     
+                     path = generate_summary(output_filename=filename)
+                     if path:
+                         st.success("Done!")
+                         st.session_state.active_report_path = Path(path).name
+                         time.sleep(1)
+                         st.rerun()
+                     else:
+                         st.error("Generation failed (no changes?)")
+
+        st.markdown("---")
+        
+        search_rep = st.text_input("Search Reports", placeholder="Filter...")
+        reports = st.session_state.report_manager.list_reports()
+        if search_rep:
+            reports = [r for r in reports if search_rep.lower() in r["filename"].lower()]
+            
+        for rep in reports:
+            label = f"{'📌 ' if rep['pinned'] else ''}{rep['filename']}"
+            if st.button(label, key=f"rep_{rep['filename']}", use_container_width=True):
+                st.session_state.active_report_path = rep["filename"]
+                st.rerun()
+
+    with col_rep_view:
+        if st.session_state.active_report_path:
+            active_rep = st.session_state.active_report_path
+            
+            r1, r2, r3 = st.columns([6, 1, 1])
+            with r1:
+                st.subheader(active_rep)
+            with r2:
+                 if st.button("📌", key="pin_rep", help="Toggle Pin"):
+                     st.session_state.report_manager.toggle_pin(active_rep)
+                     st.rerun()
+            with r3:
+                 if st.button("🗑️", key="del_rep", help="Delete Report"):
+                     st.session_state.report_manager.delete_report(active_rep)
+                     st.session_state.active_report_path = None
+                     st.rerun()
+            
+            content = st.session_state.report_manager.get_report_content(active_rep)
+            st.markdown(content)
+        else:
+            st.info("Select a report to view or generate a new one.")
 
 # --- TAB 3: AUTO-TAGGER ---
 with tab_tagger:
