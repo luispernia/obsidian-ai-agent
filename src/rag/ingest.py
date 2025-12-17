@@ -49,19 +49,16 @@ def ingest_documents():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(all_documents)
     
-    # Inject filename and tags into EVERY chunk content
     for split in splits:
         source = split.metadata.get('source', '')
         filename = os.path.basename(source)
         
-        # Format tags if present
         tags_str = ""
         tags = split.metadata.get('tags')
         if tags:
             if isinstance(tags, list):
                 tags_joined = ', '.join(str(t) for t in tags)
                 tags_str = f"Tags: {tags_joined}\n"
-                # Update metadata to string for ChromaDB compatibility
                 split.metadata['tags'] = tags_joined
             else:
                 tags_str = f"Tags: {tags}\n"

@@ -125,15 +125,8 @@ class DailyFormatter:
                     "Top Priorities: specific high importance tasks inferred or explicitly marked.\n"
                 )
                 
-                # I'm deciding to just ask the LLM to rewrite the WHOLE thing filling the template slots is risky due to the templater tags.
-                # Better approach: pass the template to LLM, tell it to fill it out, but keep the `<%...%>` tags exactly as is?
-                # No, the user wants ME to replacing the tags. 
-                # So I should separate the concerns: 
-                # 1. Logic replaces tags. 
-                # 2. LLM reorganizes body content.
-                
-                # Let's try to just ask LLM to reorganize the body.
-                # We will construct the final string using string formatting.
+                # Strategy: Ask LLM to reorganize the body content into structured sections.
+
                 
                 prompt_simple = ChatPromptTemplate.from_template(
                     "Reorganize the following daily note content into three sections:\n"
@@ -159,14 +152,8 @@ class DailyFormatter:
         # We need to manually inject the Frontmatter and Header from the template, 
         # because the LLM might mess up the Templater tags if we pass them through.
         
-        # Let's clean the template:
-        # We know the template structure.
-        # It's better to construct the "Skeleton" myself and put the LLM content in, 
-        # OR ask the LLM to fill the skeletal sections.
-        
-        # User requirement: "adapt to this daily-report template... all information... in the new formatted version"
-        
-        # Let's take the user's template and replace the keys manually.
+        # Prepare final content by replacing template tags manually
+
         final_content = self.template_content
         
         # Replace Tags
