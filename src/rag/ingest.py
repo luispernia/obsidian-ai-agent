@@ -2,8 +2,8 @@ import os
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from src import config
+from src.ai_provider import AIProvider
 
 def ingest_documents():
     all_documents = []
@@ -35,7 +35,13 @@ def ingest_documents():
     
     print(f"Split into {len(splits)} chunks.")
 
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=config.GOOGLE_API_KEY)
+    print(f"Split into {len(splits)} chunks.")
+
+    try:
+        embeddings = AIProvider.get_embeddings()
+    except Exception as e:
+        print(f"Error initializing embeddings: {e}")
+        return
     
     if os.path.exists(config.CHROMA_DB_ABS_PATH):
         import shutil

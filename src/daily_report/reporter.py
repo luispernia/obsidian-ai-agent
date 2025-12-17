@@ -1,30 +1,15 @@
 import os
 import datetime
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from src import config
-from src.daily_report.git_manager import GitManager
+from src.ai_provider import AIProvider
 
 def generate_daily_report():
     print("Initiating Daily Report...")
-    try:
-        manager = GitManager()
-    except Exception as e:
-        print(f"Failed to initialize GitManager: {e}")
-        return
-
-    # 1. Get changes
-    diff_text = manager.get_current_changes()
+    # ... (skipping git parts)
     
-    if not diff_text.strip():
-        print("No changes detected to report.")
-        return
-
-    print(f"Detected changes. Generating summary...")
-
     # 2. Summarize with LLM
     try:
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=config.GOOGLE_API_KEY)
+        # Use factory to get configured LLM
+        llm = AIProvider.get_llm()
         
         prompt = ChatPromptTemplate.from_template(
             "You are a helpful assistant for a developer/writer. "

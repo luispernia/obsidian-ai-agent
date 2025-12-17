@@ -1,8 +1,10 @@
 .env
 chroma_db/
+chroma_db_*/
 venv/
 __pycache__/
 *.pyc
 .DS_Store
 Notes/
 suggested_features.md
+.auto_tag_cache.json

@@ -5,3 +5,6 @@ langchain-chroma
 chromadb
 gitpython
 python-dotenv
+langchain-ollama
+python-frontmatter
+requests
