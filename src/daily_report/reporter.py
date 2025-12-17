@@ -8,7 +8,7 @@ from src.ai_provider import AIProvider
 from src.daily_report.git_manager import GitManager
 from src import config
 
-def generate_summary(output_filename: str = "Summary.md"):
+def generate_report_content() -> str:
     print("Generating Summary Report...")
     
     try:
@@ -50,19 +50,10 @@ def generate_summary(output_filename: str = "Summary.md"):
         print(f"Error generating summary with LLM: {e}")
         summary = "Error generating summary."
 
-    # Create Report File
-    report_path = os.path.join(config.REPORTS_ABS_PATH, output_filename)
-    
     report_content = f"# Summary Report ({source})\n*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n{summary}\n"
-    
-    try:
-        with open(report_path, "w") as f:
-            f.write(report_content)
-        print(f"Summary report created at {report_path}")
-        return report_path
-    except Exception as e:
-         print(f"Error writing report file: {e}")
-         return None
+    return report_content
 
 if __name__ == "__main__":
-    generate_summary()
+    report = generate_report_content()
+    if report:
+        print(report)
