@@ -58,3 +58,10 @@ class GitManager:
         # Add all, including untracked
         self.repo.git.add(A=True)
         return self.repo.index.commit(message)
+
+    def get_last_commit_diff(self):
+        """Returns the diff of the last commit."""
+        try:
+            return self.repo.git.show("HEAD", stat=True, patch=True)
+        except Exception as e:
+            return f"Error retrieving last commit: {e}"

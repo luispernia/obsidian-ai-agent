@@ -1,54 +1,66 @@
 import os
-import datetime
+try:
+    from langchain_core.prompts import ChatPromptTemplate
+except ImportError:
+    from langchain.prompts import ChatPromptTemplate
 from src.ai_provider import AIProvider
+from src.daily_report.git_manager import GitManager
+from src import config
 
-def generate_daily_report():
-    print("Initiating Daily Report...")
-    # ... (skipping git parts)
+def generate_summary():
+    print("Generating Summary Report...")
     
-    # 2. Summarize with LLM
     try:
-        # Use factory to get configured LLM
+        manager = GitManager()
+    except Exception as e:
+        print(f"Failed to initialize GitManager: {e}")
+        return
+    
+    # Get Changes
+    diff_text = manager.get_current_changes()
+    if not diff_text.strip():
+        print("No current changes found. Checking last commit...")
+        diff_text = manager.get_last_commit_diff()
+        source = "Last Commit"
+    else:
+        source = "Current Working Directory"
+
+    if not diff_text.strip():
+        print("No changes found in git history to summarize.")
+        return
+
+    # Summarize with LLM
+    try:
         llm = AIProvider.get_llm()
         
         prompt = ChatPromptTemplate.from_template(
-            "You are a helpful assistant for a developer/writer. "
-            "Summarize the following 'git diff' changes into a concise daily report. "
+            "You are a helpful assistant for a developer. "
+            "Summarize the following git changes ({source}) into a concise report. "
             "The report should list modified files and key changes in bullet points. "
-            "Focus on content changes in markdown files. "
-            "Be encouraging but professional.\n\n"
+            "Focus on the content and meaning of the changes. "
+            "\n\n"
             "CHANGES:\n{diff}"
         )
         
         chain = prompt | llm
-        result = chain.invoke({"diff": diff_text})
+        result = chain.invoke({"diff": diff_text, "source": source})
         summary = result.content
     except Exception as e:
         print(f"Error generating summary with LLM: {e}")
-        summary = "Error generating summary. Please check API keys and connection."
+        summary = "Error generating summary."
 
-    # 3. Create Report File
-    today = datetime.date.today()
-    report_filename = f"{today.strftime('%Y-%m-%d')}.md"
+    # Create Report File
+    report_filename = "Summary.md"
     report_path = os.path.join(config.REPORTS_ABS_PATH, report_filename)
     
-    report_content = f"# Daily Report: {today.strftime('%Y-%m-%d')}\n\n{summary}\n"
+    report_content = f"# Summary Report ({source})\n\n{summary}\n"
     
     try:
         with open(report_path, "w") as f:
             f.write(report_content)
-        print(f"Report created at {report_path}")
+        print(f"Summary report created at {report_path}")
     except Exception as e:
          print(f"Error writing report file: {e}")
-         return
-
-    # 4. Commit
-    try:
-        commit_message = f"Daily update: {today.strftime('%Y-%m-%d')}"
-        manager.commit_all(commit_message)
-        print(f"Committed changes with message: '{commit_message}'")
-    except Exception as e:
-        print(f"Error committing changes: {e}")
 
 if __name__ == "__main__":
-    generate_daily_report()
+    generate_summary()

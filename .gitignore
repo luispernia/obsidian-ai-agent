@@ -5,6 +5,6 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
-Notes/
+Notes/*
 suggested_features.md
 .auto_tag_cache.json
