@@ -51,6 +51,18 @@ Scan notes and suggest tags based on content and "maturity" (#seed, #sprout, #ev
     # Target specific folder
     python -m src.tagging.auto_tag --folder "Drafts"
     ```
+### 4. Graphical Interface (Streamlit)
+Prefer a visual interface? Launch the app to access all features in one place.
+
+*   **Command**:
+    ```bash
+    streamlit run src/gui/app.py
+    ```
+*   **Features**:
+    *   **Chat**: Interactive RAG query interface.
+    *   **Reports**: One-click daily summary generation.
+    *   **Tagger**: Visual review and bulk application of suggested tags.
+
 
 ## ⚙️ Configuration Reference
 

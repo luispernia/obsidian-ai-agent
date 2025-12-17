@@ -8,3 +8,4 @@ python-dotenv
 langchain-ollama
 python-frontmatter
 requests
+streamlit
