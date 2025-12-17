@@ -1,5 +1,8 @@
 # Obsidian AI Agent
 
+<img width="1889" height="980" alt="image" src="https://github.com/user-attachments/assets/800a9128-9438-45f8-81e2-56e37d6b8738" />
+
+
 An AI powered assistant for your Obsidian Vault. It helps you chat with your notes, auto-tag content, and generate daily work reports.
 
 **Supports:** Google Gemini (Cloud) & Ollama (Local)
