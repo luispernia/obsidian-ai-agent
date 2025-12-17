@@ -17,7 +17,7 @@ def query_rag(query_text):
     
     vectorstore = Chroma(persist_directory=config.CHROMA_DB_ABS_PATH, embedding_function=embeddings)
 
-    retriever = vectorstore.as_retriever()
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
     
     system_prompt = (
         "You are a helpful assistant for a personal knowledge base (Obsidian Vault). "
