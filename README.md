@@ -1,6 +1,6 @@
 # Obsidian AI Agent
 
-<img width="1889" height="980" alt="image" src="https://github.com/user-attachments/assets/800a9128-9438-45f8-81e2-56e37d6b8738" />
+<img width="1856" height="931" alt="image" src="https://github.com/user-attachments/assets/e763bcd9-746a-499d-9ce7-4a41b98b55fd" />
 
 
 An AI powered assistant for my Obsidian Vault. It helps to chat with notes, auto-tag content, and generate daily work reports.
